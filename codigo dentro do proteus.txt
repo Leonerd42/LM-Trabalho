@@ -61,8 +61,14 @@ CODIGO SEGMENT PARA 'CODE'
       MOV CX, 50000
       CALL DELAY
       
-      MOV AH, 'A'
-      CALL ESCREVE_LCD
+      LEA SI, a1 
+      CALL TXT_LCD
+      MOV CX,100000
+      CALL DELAY
+      CALL CLEAR_LCD
+      LEA SI, a2
+      CALL TXT_LCD
+      
       ;CALL TXT_LCD
       JMP $
       
@@ -163,8 +169,6 @@ INIT_LCD:
       ; o caracter de comando deve estar no registrador AH
 COMANDO_LCD:
 	 CALL OUT_PORTA
-	 MOV CX, 100
-	 CALL DELAY
 	 MOV AH, 04H
 	 CALL OUT_PORTB	 
 	 MOV CX, 250
@@ -190,9 +194,18 @@ ESCREVE_LCD:
       ; procedimento que escreve um conjunto de caracteres no display LCD
       ; o endereço de memória de início da string deve estar no registrador SI
       ; toda string deve conter o terminador '$'
-TXT_LCD:
+TXT_LCD:           
+      CLD
+M:    LODSB
+      CMP AL, '$'
+      JZ E_T
+      MOV AH, AL      
+      CALL ESCREVE_LCD      
+      JMP M
+E_T:  RET
       
-      RET
+a1  DB 'LINGUAGEM DE$'
+a2  DB 'MONTAGEM$'
       
       ; #####################################################################
       ; procedimento que limpa o display LCD
