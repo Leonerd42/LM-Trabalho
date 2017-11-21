@@ -82,11 +82,7 @@ MAIN:
 	 STI       
 	 ; varredura do teclado
 	 LMAIN:  
-	    
-	    
-	    
-	    
-	    
+	    	    
 	   
 	    JMP LMAIN
 	      
@@ -94,60 +90,58 @@ MAIN:
       
       ; #####################################################################
       ; rotina de inicialização do CI 8255A
-INIT_IO: 
+INIT_IO PROC NEAR
 	 MOV DX, 0000H
 	 MOV AX, 088H			; VALOR DO FABRICANTE PARA CONFIGURAR A PC MEIA ENTRADA E MEIA SAIDA
 	 OUT DX, AX
 	 MOV DX, 04004H
 	 MOV AX, 00FH
-	 RET      
+	 RET     
+INIT_IO ENDP
       
-OUT_PORTA: 
+OUT_PORTA PROC NEAR
 	 MOV AL, AH			; O VALOR DO BYTE PARA SAIR DEVE ESTAR EM AH
 	 MOV DX, 4000H
 	 OUT DX, AL
 	 RET
+OUT_PORTA ENDP
    
-OUT_PORTB:
+OUT_PORTB PROC NEAR
 	 MOV AL, AH
 	 MOV DX, 4002H
 	 OUT DX, AL
 	 RET
+OUT_PORTB ENDP
 
-OUT_PORTC: 	 		; PERGUNTAR SOBRE A DIVISÃO DA PORTA
+OUT_PORTC PROC NEAR 		; PERGUNTAR SOBRE A DIVISÃO DA PORTA
 	 MOV AL, AH
 	 MOV DX, 4004H
 	 OUT DX, AL	
 	 RET
+OUT_PORTC ENDP
 
-IN_PORTC: 
+IN_PORTC PROC NEAR 
 	 MOV DX, 4004H
 	; IN DX, AL
 	 RET
+IN_PORTC ENDP
       
       ; #####################################################################   
       ; procedimento de delay - CX = 0001h = 22 us (1MHz)
       ; o número de interações deve estar carregado no registrador CX
-      ;DELAY PROC NEAR
-DELAY:	    push CX
+DELAY PROC NEAR
+	    push CX
 LOOP_DELAY: JCXZ END_D
 	    DEC CX
 	    JMP LOOP_DELAY
 END_D:      pop CX
       RET
-      
-  ;rotina para delay de aproximadamente 1 segundo    
+DELAY ENDP  
   
-DELAY_SEG:	push CX
-		MOV CX, 50000
-LOOP_DS:	JCXZ END_DS
-		DEC CX
-		JMP LOOP_DS
-END_DS:		pop CX
       ; #####################################################################
       ; procedimento que inicializa o display LCD
       ; display LCD 16x2
-INIT_LCD: 
+INIT_LCD PROC NEAR 
       MOV AH, 00H
       CALL OUT_PORTB
       MOV CX, 1000		; TEMPO PARA 20 ms
@@ -163,11 +157,12 @@ INIT_LCD:
       MOV CX, 230		; TEMPO PARA 5 ms
       CALL DELAY
       RET
+INIT_LCD ENDP
       
       ; #####################################################################
       ; procedimento que envia um comando para o display LCD
       ; o caracter de comando deve estar no registrador AH
-COMANDO_LCD:
+COMANDO_LCD PROC NEAR
 	 CALL OUT_PORTA
 	 MOV AH, 04H
 	 CALL OUT_PORTB	 
@@ -176,11 +171,12 @@ COMANDO_LCD:
 	 MOV AH, 00H
 	 CALL OUT_PORTB
          RET
-      
+COMANDO_LCD ENDP
+
       ; #####################################################################
       ; procedimento que escreve um caracter no display LCD
       ; o caracter deve estar no registrador AH em código ASCII
-ESCREVE_LCD: 
+ESCREVE_LCD PROC NEAR
 	 CALL OUT_PORTA
 	 MOV AH, 05H
 	 CALL OUT_PORTB	 
@@ -189,12 +185,12 @@ ESCREVE_LCD:
          MOV AH, 01H
          CALL OUT_PORTB
          RET
-      
+ ESCREVE_LCD ENDP
       ; #####################################################################
       ; procedimento que escreve um conjunto de caracteres no display LCD
       ; o endereço de memória de início da string deve estar no registrador SI
       ; toda string deve conter o terminador '$'
-TXT_LCD:           
+TXT_LCD PROC NEAR         
       CLD
 M:    LODSB
       CMP AL, '$'
@@ -203,18 +199,20 @@ M:    LODSB
       CALL ESCREVE_LCD      
       JMP M
 E_T:  RET
+TXT_LCD ENDP
       
 a1  DB 'LINGUAGEM DE$'
 a2  DB 'MONTAGEM$'
       
       ; #####################################################################
       ; procedimento que limpa o display LCD
- CLEAR_LCD: 
+CLEAR_LCD PROC NEAR
 	 MOV AH, 01H
 	 CALL COMANDO_lCD
 	 MOV CX, 230
 	 CALL DELAY 
-      RET
+	 RET
+CLEAR_LCD ENDP
       
 
 
