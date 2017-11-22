@@ -13,9 +13,7 @@
 ; segmento do programa principal (o segmento de dados não foi criado)
 CODIGO SEGMENT PARA 'CODE'
        ASSUME CS:CODIGO
-       ASSUME ES:CODIGO   
-       
-       
+       ASSUME ES:CODIGO         
    
    ; inicia programa no endereço especificado
    ORG 0100h 
@@ -56,21 +54,7 @@ CODIGO SEGMENT PARA 'CODE'
       ; * insira seu código aqui *    
       
       CALL INIT_IO  
-      CALL INIT_LCD
-      
-      MOV CX, 50000
-      CALL DELAY
-      
-      LEA SI, a1 
-      CALL TXT_LCD
-      MOV CX,100000
-      CALL DELAY
-      CALL CLEAR_LCD
-      LEA SI, a2
-      CALL TXT_LCD
-      
-      ;CALL TXT_LCD
-      JMP $
+      CALL INIT_LCD      
       
       ; chama rotina principal
       CALL MAIN
@@ -82,8 +66,22 @@ MAIN:
 	 STI       
 	 ; varredura do teclado
 	 LMAIN:  
-	    	    
-	   
+	    MOV AH, 0E0H
+	    CALL OUT_PORTC
+	    MOV CX, 909D
+	    CALL DELAY
+	    MOV AH, 0D0H
+	    CALL OUT_PORTC
+	    MOV CX, 909D
+	    CALL DELAY
+	    MOV AH, 0B0H
+	    CALL OUT_PORTC
+	    MOV CX, 909D
+	    CALL DELAY
+	    MOV AH, 070H
+	    CALL OUT_PORTC
+	    MOV CX, 909D
+	    CALL DELAY	   
 	    JMP LMAIN
 	      
 	 RET
@@ -92,10 +90,10 @@ MAIN:
       ; rotina de inicialização do CI 8255A
 INIT_IO PROC NEAR
 	 MOV DX, 0000H
-	 MOV AX, 088H			; VALOR DO FABRICANTE PARA CONFIGURAR A PC MEIA ENTRADA E MEIA SAIDA
+	 MOV AX, 081H			; VALOR DO FABRICANTE PARA CONFIGURAR A PC MEIA ENTRADA E MEIA SAIDA
 	 OUT DX, AX
-	 MOV DX, 04004H
-	 MOV AX, 00FH
+	 ;MOV DX, 04004H
+	 ;MOV AX, 00FH
 	 RET     
 INIT_IO ENDP
       
@@ -122,7 +120,7 @@ OUT_PORTC ENDP
 
 IN_PORTC PROC NEAR 
 	 MOV DX, 4004H
-	; IN DX, AL
+	 IN AL, DX
 	 RET
 IN_PORTC ENDP
       
@@ -213,18 +211,21 @@ CLEAR_LCD PROC NEAR
 	 CALL DELAY 
 	 RET
 CLEAR_LCD ENDP
-      
-
-
       ; #####################################################################
       ; procedimento que posiciona o cursor do display LCD
       ; o registrador BX armazena as coordenadas
       ; BH = linha  - 01 e 02
       ; BL = coluna - 01 a 16
       CURSOR_POS_LCD PROC NEAR
-      
-	 ; * insira seu código aqui *
-	 
+	 CMP BH, 01H
+	 JZ P_L
+	 MOV AH, 0C0H
+	 JMP S
+P_L:	 MOV AH, 080H
+S:	 DEC BL
+	 ADD AH, BL
+	 CALL COMANDO_LCD
+	 RET	 
       CURSOR_POS_LCD ENDP
 
       ; #####################################################################
@@ -263,7 +264,14 @@ CLEAR_LCD ENDP
 	 
 	 ; desabilita interrupções
 	 CLI
-	 
+	; push CX;
+	 ;MOV CX,EBh
+	 CALL IN_PORTC
+	 CMP AX,1011B
+	 JNZ PULA
+	 MOV AH, '1'
+	 CALL ESCREVE_LCD
+PULA:
 	 ; * insira seu código aqui *
 	    
 	 ; habilita interrupções
