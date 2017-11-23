@@ -25,11 +25,13 @@ CODIGO SEGMENT PARA 'CODE'
    PORTAC	equ	4004h
 
    ; constantes dos delays utilizados
+   DELAY_1S	equ	 45450d
    DELAY_20ms	equ      909d
    DELAY_5ms    equ      230d
    DELAY_500us  equ	 25d
    
    ; strings em geral            
+
    a1  		DB 'LINGUAGEM DE$'
    a2  		DB 'MONTAGEM$'
    erro1	DB '#INF!$'
@@ -56,6 +58,7 @@ CODIGO SEGMENT PARA 'CODE'
 	    
 	    CALL INIT_IO  
 	    CALL INIT_LCD      
+	    
 	    ; chama rotina principal
 	    CALL MAIN
    	 
@@ -255,6 +258,7 @@ CODIGO SEGMENT PARA 'CODE'
       ; BL = coluna - 01 a 16
    CURSOR_POS_LCD PROC NEAR
 	 push AX
+	 push BX
 	 CMP BH, 01H
 	 JZ P_L
 	 MOV AH, 0C0H
@@ -263,6 +267,7 @@ CODIGO SEGMENT PARA 'CODE'
    S:	 DEC BL
 	 ADD AH, BL
 	 CALL COMANDO_LCD
+	 pop BX
 	 pop AX
 	 RET	 
    CURSOR_POS_LCD ENDP
