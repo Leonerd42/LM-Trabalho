@@ -20,67 +20,67 @@ CODIGO SEGMENT PARA 'CODE'
    JMP START 
    
    ; seta endereços das portas e controle do CI 8255
-
+   PORTAA	equ	4000h
+   PORTAB	equ	4002h
+   PORTAC	equ	4004h
 
    ; constantes dos delays utilizados
-
+   DELAY_20ms	equ      909d
+   DELAY_5ms    equ      230d
+   DELAY_500us  equ	 25d
    
-   ; strings para os códigos de erro
-
+   ; strings em geral            
+   a1  		DB 'LINGUAGEM DE$'
+   a2  		DB 'MONTAGEM$'
+   erro1	DB '#INF!$'
+   erro2	DB '#DIV/0$'
    
    ; tabela de códigos da varredura do teclado (código, tecla ASCII)
 
 	       
    ; início
    START: 
-   
-      VALOR equ 04H
-
-      ; desabilita as interrupções
-      CLI
-      
-      ; tamanho do offset do segmento de pilha em relação ao SP (x 010h)
-      MOV AX,00000h
-      MOV SS,AX
-      
-      ; seta endereço de início do segmento da pilha - 0FFFFh
-      MOV AX,10000h
-      MOV SP,AX
-      
-      ; inicializa registrador de segmento de código - 00000h
-      MOV AX,00000h
-      MOV CS,AX
-
-      ; * insira seu código aqui *    
-      
-      CALL INIT_IO  
-      CALL INIT_LCD      
-      
-      ; chama rotina principal
-      CALL MAIN
+	    ; desabilita as interrupções
+	    CLI
+	    ; tamanho do offset do segmento de pilha em relação ao SP (x 010h)
+	    MOV AX,00000h
+	    MOV SS,AX
+	    
+	    ; seta endereço de início do segmento da pilha - 0FFFFh
+	    MOV AX,10000h
+	    MOV SP,AX
+	    
+	    ; inicializa registrador de segmento de código - 00000h
+	    MOV AX,00000h
+	    MOV CS,AX    
+	    
+	    CALL INIT_IO  
+	    CALL INIT_LCD      
+	    ; chama rotina principal
+	    CALL MAIN
    	 
       ; #####################################################################
       ; programa principal
-MAIN:	      	
+   MAIN:	      	
 	 ; habilita as interrupções
 	 STI       
 	 ; varredura do teclado
 	 LMAIN:  
 	    MOV AH, 0E0H
 	    CALL OUT_PORTC
-	    MOV CX, 909D
+	    MOV CX, DELAY_20ms
 	    CALL DELAY
 	    MOV AH, 0D0H
 	    CALL OUT_PORTC
-	    MOV CX, 909D
+	    MOV CX, DELAY_20ms
 	    CALL DELAY
 	    MOV AH, 0B0H
 	    CALL OUT_PORTC
-	    MOV CX, 909D
+	    MOV CX, DELAY_20ms
 	    CALL DELAY
 	    MOV AH, 070H
 	    CALL OUT_PORTC
-	    MOV CX, 909D
+	    MOV CX, DELAY_20ms
 	    CALL DELAY	   
 	    JMP LMAIN
 	      
@@ -88,161 +88,204 @@ MAIN:
       
       ; #####################################################################
       ; rotina de inicialização do CI 8255A
-INIT_IO PROC NEAR
-	 MOV DX, 0000H
-	 MOV AX, 081H			; VALOR DO FABRICANTE PARA CONFIGURAR A PC MEIA ENTRADA E MEIA SAIDA
-	 OUT DX, AX
-	 ;MOV DX, 04004H
-	 ;MOV AX, 00FH
-	 RET     
-INIT_IO ENDP
+   INIT_IO PROC NEAR
+	    push AX
+	    push DX
+	    MOV DX, 4006H			; Valores tem que estar todos em 1
+	    MOV AX, 081H			; VALOR DO FABRICANTE PARA CONFIGURAR A PC MEIA ENTRADA E MEIA SAIDA
+	    OUT DX, AX
+	    pop DX
+	    pop AX
+	    RET     
+   INIT_IO ENDP
       
-OUT_PORTA PROC NEAR
-	 MOV AL, AH			; O VALOR DO BYTE PARA SAIR DEVE ESTAR EM AH
-	 MOV DX, 4000H
-	 OUT DX, AL
-	 RET
-OUT_PORTA ENDP
+   OUT_PORTA PROC NEAR
+	    push AX
+	    push DX
+	    MOV AL, AH			; O VALOR DO BYTE PARA SAIR DEVE ESTAR EM AH
+	    MOV DX, PORTAA
+	    OUT DX, AL
+	    pop DX
+	    pop AX
+	    RET
+   OUT_PORTA ENDP
    
-OUT_PORTB PROC NEAR
-	 MOV AL, AH
-	 MOV DX, 4002H
-	 OUT DX, AL
-	 RET
-OUT_PORTB ENDP
+   OUT_PORTB PROC NEAR
+	    push AX
+	    push DX
+	    MOV AL, AH
+	    MOV DX, PORTAB
+	    OUT DX, AL
+	    pop DX
+	    pop AX
+	    RET
+   OUT_PORTB ENDP
 
-OUT_PORTC PROC NEAR 		; PERGUNTAR SOBRE A DIVISÃO DA PORTA
-	 MOV AL, AH
-	 MOV DX, 4004H
-	 OUT DX, AL	
-	 RET
-OUT_PORTC ENDP
+   OUT_PORTC PROC NEAR 		; PERGUNTAR SOBRE A DIVISÃO DA PORTA
+	    push AX
+	    push DX
+	    MOV AL, AH
+	    MOV DX, PORTAC
+	    OUT DX, AL
+	    pop DX
+	    pop AX 
+	    RET
+   OUT_PORTC ENDP
 
-IN_PORTC PROC NEAR 
-	 MOV DX, 4004H
-	 IN AL, DX
-	 RET
-IN_PORTC ENDP
-      
+   IN_PORTC PROC NEAR 
+	    push AX
+	    push DX
+	    MOV DX, 4004H
+	    IN AL, DX
+	    pop DX
+	    pop AX 
+	    RET
+   IN_PORTC ENDP      
+   
       ; #####################################################################   
       ; procedimento de delay - CX = 0001h = 22 us (1MHz)
       ; o número de interações deve estar carregado no registrador CX
-DELAY PROC NEAR
+   DELAY PROC NEAR
 	    push CX
-LOOP_DELAY: JCXZ END_D
-	    DEC CX
-	    JMP LOOP_DELAY
-END_D:      pop CX
-      RET
-DELAY ENDP  
-  
+   L_DELAY: 
+	    JCXZ END_D
+	    LOOP L_DELAY
+   END_D:   pop CX
+	    RET
+   DELAY ENDP    
+   
       ; #####################################################################
       ; procedimento que inicializa o display LCD
       ; display LCD 16x2
-INIT_LCD PROC NEAR 
-      MOV AH, 00H
-      CALL OUT_PORTB
-      MOV CX, 1000		; TEMPO PARA 20 ms
-      CALL DELAY
-      MOV AH, 038H
-      CALL COMANDO_LCD
-      MOV AH, 0CH
-      CALL COMANDO_LCD
-      MOV AH, 06H
-      CALL COMANDO_LCD
-      MOV AH, 01H
-      CALL COMANDO_LCD
-      MOV CX, 230		; TEMPO PARA 5 ms
-      CALL DELAY
-      RET
-INIT_LCD ENDP
+      INIT_LCD PROC NEAR 
+	    push AX
+	    push DX
+	    MOV AH, 00H
+	    CALL OUT_PORTB
+	    MOV CX, DELAY_20ms
+	    CALL DELAY
+	    MOV AH, 038H
+	    CALL COMANDO_LCD
+	    MOV AH, 0CH
+	    CALL COMANDO_LCD
+	    MOV AH, 06H
+	    CALL COMANDO_LCD
+	    MOV AH, 01H
+	    CALL COMANDO_LCD
+	    MOV CX, DELAY_5ms		; TEMPO PARA 5 ms
+	    CALL DELAY
+	    pop DX
+	    pop AX
+	    RET	    
+	INIT_LCD ENDP
       
       ; #####################################################################
       ; procedimento que envia um comando para o display LCD
       ; o caracter de comando deve estar no registrador AH
-COMANDO_LCD PROC NEAR
-	 CALL OUT_PORTA
-	 MOV AH, 04H
-	 CALL OUT_PORTB	 
-	 MOV CX, 250
-	 CALL DELAY
-	 MOV AH, 00H
-	 CALL OUT_PORTB
-         RET
-COMANDO_LCD ENDP
+   COMANDO_LCD PROC NEAR
+	    push AX
+	    push CX
+	    CALL OUT_PORTA
+	    MOV AH, 04H
+	    CALL OUT_PORTB	 
+	    MOV CX, DELAY_500us
+	    CALL DELAY
+	    MOV AH, 00H
+	    CALL OUT_PORTB
+	    pop CX
+	    pop AX
+	    RET
+   COMANDO_LCD ENDP
 
       ; #####################################################################
       ; procedimento que escreve um caracter no display LCD
-      ; o caracter deve estar no registrador AH em código ASCII
-ESCREVE_LCD PROC NEAR
-	 CALL OUT_PORTA
-	 MOV AH, 05H
-	 CALL OUT_PORTB	 
-         MOV CX, 250
-         CALL DELAY
-         MOV AH, 01H
-         CALL OUT_PORTB
-         RET
- ESCREVE_LCD ENDP
+      ; o caracter deve estar no registrador AH em código ASCII]
+      
+   ESCREVE_LCD PROC NEAR
+	    push AX
+	    push CX
+	    CALL OUT_PORTA
+	    MOV AH, 05H
+	    CALL OUT_PORTB	 
+	    MOV CX, DELAY_500us
+	    CALL DELAY
+	    MOV AH, 01H
+	    CALL OUT_PORTB
+	    pop CX
+	    pop AX
+	    RET
+   ESCREVE_LCD ENDP
+   
       ; #####################################################################
       ; procedimento que escreve um conjunto de caracteres no display LCD
       ; o endereço de memória de início da string deve estar no registrador SI
       ; toda string deve conter o terminador '$'
-TXT_LCD PROC NEAR         
-      CLD
-M:    LODSB
-      CMP AL, '$'
-      JZ E_T
-      MOV AH, AL      
-      CALL ESCREVE_LCD      
-      JMP M
-E_T:  RET
-TXT_LCD ENDP
       
-a1  DB 'LINGUAGEM DE$'
-a2  DB 'MONTAGEM$'
+   TXT_LCD PROC NEAR         
+	 push AX
+	 CLD
+   M:    LODSB
+	 CMP AL, '$'
+	 JZ E_T
+	 MOV AH, AL      
+	 CALL ESCREVE_LCD      
+	 JMP M
+	 pop AX
+   E_T:  RET
+   TXT_LCD ENDP
       
       ; #####################################################################
       ; procedimento que limpa o display LCD
-CLEAR_LCD PROC NEAR
+   CLEAR_LCD PROC NEAR
+	 push AX
+	 push CX
 	 MOV AH, 01H
 	 CALL COMANDO_lCD
-	 MOV CX, 230
+	 MOV CX, DELAY_5ms
 	 CALL DELAY 
+	 pop CX
+	 pop AX
 	 RET
-CLEAR_LCD ENDP
+   CLEAR_LCD ENDP
+
       ; #####################################################################
       ; procedimento que posiciona o cursor do display LCD
       ; o registrador BX armazena as coordenadas
       ; BH = linha  - 01 e 02
       ; BL = coluna - 01 a 16
-      CURSOR_POS_LCD PROC NEAR
+   CURSOR_POS_LCD PROC NEAR
+	 push AX
 	 CMP BH, 01H
 	 JZ P_L
 	 MOV AH, 0C0H
 	 JMP S
-P_L:	 MOV AH, 080H
-S:	 DEC BL
+   P_L:	 MOV AH, 080H
+   S:	 DEC BL
 	 ADD AH, BL
 	 CALL COMANDO_LCD
+	 pop AX
 	 RET	 
-      CURSOR_POS_LCD ENDP
+   CURSOR_POS_LCD ENDP
 
-      ; #####################################################################
-      ; procedimento que aciona o cursor do display LCD
-      CURSOR_ON_LCD PROC NEAR
-      
-	 ; * insira seu código aqui *
-      
-      CURSOR_ON_LCD ENDP
-      
-      ; #####################################################################
-      ; procedimento que oculta o cursor do display LCD
-      CURSOR_OFF_LCD PROC NEAR
-      
-	 ; * insira seu código aqui *
-	    
-      CURSOR_OFF_LCD ENDP
+   ; #####################################################################
+   ; procedimento que aciona o cursor do display LCD
+   CURSOR_ON_LCD PROC NEAR
+	 push AX
+	 MOV AH, 0FH
+	 CALL COMANDO_LCD
+	 pop AX
+	 RET   
+   CURSOR_ON_LCD ENDP
+   
+   ; #####################################################################
+   ; procedimento que oculta o cursor do display LCD
+   CURSOR_OFF_LCD PROC NEAR
+	 push AX
+	 MOV AH, 0CH
+	 CALL COMANDO_LCD
+	 pop AX
+	 RET	 
+   CURSOR_OFF_LCD ENDP
       
       ; #####################################################################
       ; procedimento de análise de teclas
@@ -264,14 +307,9 @@ S:	 DEC BL
 	 
 	 ; desabilita interrupções
 	 CLI
-	; push CX;
-	 ;MOV CX,EBh
-	 CALL IN_PORTC
-	 CMP AX,1011B
-	 JNZ PULA
-	 MOV AH, '1'
-	 CALL ESCREVE_LCD
-PULA:
+	
+	 
+
 	 ; * insira seu código aqui *
 	    
 	 ; habilita interrupções
@@ -280,5 +318,5 @@ PULA:
       ; indica retorna da interrupção
       IRET
 
-CODIGO ENDS
+   CODIGO ENDS
        END START
