@@ -36,6 +36,23 @@ CODIGO SEGMENT PARA 'CODE'
    a2  		DB 'MONTAGEM$'
    erro1	DB '#INF!$'
    erro2	DB '#DIV/0$'
+   b0		DB '0$'
+   b1		DB '1$'
+   b2		DB '2$'
+   b3		DB '3$'
+   b4		DB '4$'
+   b5		DB '5$'
+   b6		DB '6$'
+   b7		DB '7$'
+   b8		DB '8$'  
+   b9		DB '9$'
+   b10		DB '-$'
+   b11		DB '/$'
+   b12		DB '=$'
+   b13		DB '+$'
+   b14		DB '*$'
+   resp 	DB '$'
+   
    
    ; tabela de códigos da varredura do teclado (código, tecla ASCII)
 
@@ -69,6 +86,8 @@ CODIGO SEGMENT PARA 'CODE'
 	 STI       
 	 ; varredura do teclado
 	 LMAIN:  
+	    push BX
+	    push DX
 	    MOV AH, 0E0H
 	    CALL OUT_PORTC
 	    MOV CX, DELAY_20ms
@@ -86,7 +105,8 @@ CODIGO SEGMENT PARA 'CODE'
 	    MOV CX, DELAY_20ms
 	    CALL DELAY	   
 	    JMP LMAIN
-	      
+	    POP DX
+	    POP BX
 	 RET
       
       ; #####################################################################
@@ -136,12 +156,12 @@ CODIGO SEGMENT PARA 'CODE'
    OUT_PORTC ENDP
 
    IN_PORTC PROC NEAR 
-	    push AX
+	  ; push AX
 	    push DX
 	    MOV DX, 4004H
 	    IN AL, DX
 	    pop DX
-	    pop AX 
+	  ;  pop AX 
 	    RET
    IN_PORTC ENDP      
    
@@ -233,8 +253,8 @@ CODIGO SEGMENT PARA 'CODE'
 	 MOV AH, AL      
 	 CALL ESCREVE_LCD      
 	 JMP M
-	 pop AX
-   E_T:  RET
+   E_T:  pop AX
+	 RET
    TXT_LCD ENDP
       
       ; #####################################################################
@@ -312,9 +332,171 @@ CODIGO SEGMENT PARA 'CODE'
 	 
 	 ; desabilita interrupções
 	 CLI
-	
-	 
-
+	 CALL IN_PORTC
+	 CMP AL,0E7H
+	 JNZ NAO14
+	 MOV DX,00001H
+	 MOV BX,00000H
+	 JMP ASD
+NAO14:	 CMP AL,07BH		;-
+	 JNZ NAO10
+	 MOV DX,0010D
+	 LEA SI, b10
+	 JMP ASD
+NAO10:	 CMP AL,07EH		;/
+	 JNZ NAO11
+	 MOV DX,0011D
+	 LEA SI, b11
+	 JMP ASD
+NAO11:	 CMP AL,0B7H		;=
+	 JNZ NAO12
+	 MOV DX,0012D
+	 LEA SI, b12
+	 JMP ASD
+NAO12:	 CMP AL,077H		;+
+	 JNZ NAO13
+	 MOV DX,0013D
+	 LEA SI, b13
+	 JMP ASD
+NAO13:	 CMP AL,07DH		;*
+	 JNZ NAO9
+	 MOV DX,14D
+	 LEA SI, b14
+	 JMP ASD
+NAO9:	 CMP AL,0BEH
+	 JNZ NAO8
+	 CMP BX,0D
+	 JZ SOMA9
+	 push AX
+	 MOV AX,10D
+	 MUL BX
+	 MOV BX,AX
+	 POP AX
+SOMA9:	 ADD BX,9H
+	 LEA SI,b9
+	 JMP ASD
+NAO8:	 CMP AL,0DEH
+	 JNZ NAO7
+	 CMP BX,0D
+	 JZ SOMA8
+	 push AX
+	 MOV AX,10D
+	 MUL BX
+	 MOV BX,AX
+	 POP AX
+SOMA8:	 ADD BX,8H
+	 LEA SI,b8
+	 JMP ASD
+NAO7:	 CMP AL,0EEH
+	 JNZ NAO6
+	 CMP BX,0D
+	 JZ SOMA7
+	 push AX
+	 MOV AX,10D
+	 MUL BX
+	 MOV BX,AX
+	 POP AX
+SOMA7:	 ADD BX,7H
+	 LEA SI,b7
+	 JMP ASD
+NAO6:	 CMP AL,0BDH
+	 JNZ NAO5	
+	 CMP BX,0D
+	 JZ SOMA6
+	 push AX
+	 MOV AX,10D
+	 MUL BX
+	 MOV BX,AX
+	 POP AX
+SOMA6:	 ADD BX,6H
+	 LEA SI,b6
+	 JMP ASD
+NAO5:	 CMP AL,0DDH
+	 JNZ NAO4
+	 CMP BX,0D
+	 JZ SOMA5
+	 push AX
+	 MOV AX,10D
+	 MUL BX
+	 MOV BX,AX
+	 POP AX
+SOMA5:   ADD BX,5H
+	 LEA SI,b5
+	 JMP ASD
+NAO4:	 CMP AL,0EDH
+	 JNZ NAO3
+	 CMP BX,0D
+	 JZ SOMA4
+	 push AX
+	 MOV AX,10D
+	 MUL BX
+	 MOV BX,AX
+	 POP AX
+SOMA4:	 ADD BX,4H
+	 LEA SI,b4
+	 JMP ASD
+NAO3:	 CMP AL,0BBH
+	 JNZ NAO2
+	 CMP BX,0D
+	 JZ SOMA3
+	 push AX
+	 MOV AX,10D
+	 MUL BX
+	 MOV BX,AX
+	 POP AX
+SOMA3:	 ADD BX,3H
+	 LEA SI,b3
+	 JMP ASD
+NAO2:	 CMP AL,0DBH
+	 JNZ NAO1
+	 CMP BX,0D
+	 JZ SOMA2
+	 push AX
+	 MOV AX,10D
+	 MUL BX
+	 MOV BX,AX
+	 POP AX
+SOMA2:	 ADD BX,2H
+	 LEA SI, b2
+	 JMP ASD
+NAO1:	 CMP AL,0EBH
+	 JNZ NAO0
+	 CMP BX,0D
+	 JZ SOMA1
+	 push AX
+	 MOV AX,10D
+	 MUL BX
+	 MOV BX,AX
+	 POP AX
+SOMA1:	 ADD BX,1H
+	 LEA SI,b1
+	 JMP ASD
+NAO0:	 CMP AL,0D7H
+	 JNZ ASD
+	 CMP BX,0D
+	 JZ SOMA0
+	 push AX
+	 MOV AX,10D
+	 MUL BX
+	 MOV BX,AX
+	 POP AX
+SOMA0:	 ADD BX,0H
+	 LEA SI,b0
+	 JMP ASD
+ASD: 	 CALL TXT_LCD
+	 MOV DX,AX
+FICA_AE: push DX
+	 CALL IN_PORTC
+	 CMP DX,AX
+	 POP DX
+	 JZ FICA_AE
+	 CMP DX,13D
+	 JNZ SAI
+	 MOV DL,RESP
+	 ADD resp,48D
+	 LEA SI,resp
+	 CALL TXT_LCD
+SAI:
 	 ; * insira seu código aqui *
 	    
 	 ; habilita interrupções
