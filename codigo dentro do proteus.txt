@@ -30,12 +30,14 @@ CODIGO SEGMENT PARA 'CODE'
    DELAY_5ms    equ      230d
    DELAY_500us  equ	 25d
    
-   ; strings em geral            
+   ; strings e variaveis           
 
    a1  		DB 'LINGUAGEM DE$'
    a2  		DB 'MONTAGEM$'
    erro1	DB '#INF!$'
    erro2	DB '#DIV/0$'
+   NUM		DB 0D
+   IGUAL	DB 0D
    b0		DB '0$'
    b1		DB '1$'
    b2		DB '2$'
@@ -52,6 +54,17 @@ CODIGO SEGMENT PARA 'CODE'
    b13		DB '+$'
    b14		DB '*$'
    resp 	DB '$'
+   valor1	DW 0H
+   C1		DB 0H
+   C2		DB 0H
+   C3		DB 0H
+   C4		DB 0H
+   C5		DB 0H
+   ligado	DB 0H	;QND FOR 0 O VISOR ESTA DESLIGADO, QND FOR 1 ESTA LIGADO E SEM NADA ESCRITO, QND FOR 2 TEM ALGO ESCRITO
+   CONTA	DB 0H	;verifica o numero de vezes que as instruçoes + - * / foram pressionadas
+   MENOR	DB 0H	;SINALIZA NUMERO NEGATIO
+   INVA		DB 0H	;PARA QUANDO NAO É VALIDO O VALOR
+			;1 PARA NUMERO ACIMA DO PERMITIDO E 2 PARA DIVISAO POR 0
    
    
    ; tabela de códigos da varredura do teclado (código, tecla ASCII)
@@ -111,6 +124,7 @@ CODIGO SEGMENT PARA 'CODE'
       
       ; #####################################################################
       ; rotina de inicialização do CI 8255A
+   ;----exercicio 1
    INIT_IO PROC NEAR
 	    push AX
 	    push DX
@@ -121,8 +135,10 @@ CODIGO SEGMENT PARA 'CODE'
 	    pop AX
 	    RET     
    INIT_IO ENDP
-      
-   OUT_PORTA PROC NEAR
+      ;----fim do ex1
+ 
+;-----ex2 
+  OUT_PORTA PROC NEAR
 	    push AX
 	    push DX
 	    MOV AL, AH			; O VALOR DO BYTE PARA SAIR DEVE ESTAR EM AH
@@ -144,7 +160,7 @@ CODIGO SEGMENT PARA 'CODE'
 	    RET
    OUT_PORTB ENDP
 
-   OUT_PORTC PROC NEAR 		; PERGUNTAR SOBRE A DIVISÃO DA PORTA
+   OUT_PORTC PROC NEAR 		
 	    push AX
 	    push DX
 	    MOV AL, AH
@@ -164,10 +180,13 @@ CODIGO SEGMENT PARA 'CODE'
 	  ;  pop AX 
 	    RET
    IN_PORTC ENDP      
+   ;--------------fim do ex2
    
-      ; #####################################################################   
+   ; #####################################################################   
       ; procedimento de delay - CX = 0001h = 22 us (1MHz)
       ; o número de interações deve estar carregado no registrador CX
+   
+   ;---ex3
    DELAY PROC NEAR
 	    push CX
    L_DELAY: 
@@ -176,24 +195,30 @@ CODIGO SEGMENT PARA 'CODE'
    END_D:   pop CX
 	    RET
    DELAY ENDP    
+   ;------fim do ex3
    
       ; #####################################################################
       ; procedimento que inicializa o display LCD
       ; display LCD 16x2
+
+      ;---ex6
       INIT_LCD PROC NEAR 
 	    push AX
 	    push DX
-	    MOV AH, 00H
-	    CALL OUT_PORTB
-	    MOV CX, DELAY_20ms
+	    MOV AH, 00H ;a-limpar o barramento de ocntrole do display
+	    ;enable =0, rw = 0 e rs=0
+	    CALL OUT_PORTB ;b - escreve o dado na portB
+	    MOV CX, DELAY_20ms ;c-aguarda
 	    CALL DELAY
-	    MOV AH, 038H
+	    MOV AH, 038H ;d-enviar comando 38h ao display
 	    CALL COMANDO_LCD
-	    MOV AH, 0CH
+	    MOV AH, 0CH ;e -enviar comando OCh ao display
+	    ;-pra configurar o cursos
 	    CALL COMANDO_LCD
-	    MOV AH, 06H
+	    MOV AH, 06H;f-enviar comando 06h ao display
+	                  ;cursor vai para direita
 	    CALL COMANDO_LCD
-	    MOV AH, 01H
+	    MOV AH, 01H ;g- limpar a tela com o comando 01h
 	    CALL COMANDO_LCD
 	    MOV CX, DELAY_5ms		; TEMPO PARA 5 ms
 	    CALL DELAY
@@ -201,11 +226,14 @@ CODIGO SEGMENT PARA 'CODE'
 	    pop AX
 	    RET	    
 	INIT_LCD ENDP
+      ;------- fim do ex6
       
       ; #####################################################################
       ; procedimento que envia um comando para o display LCD
       ; o caracter de comando deve estar no registrador AH
-   COMANDO_LCD PROC NEAR
+
+      ;---ex4
+      COMANDO_LCD PROC NEAR
 	    push AX
 	    push CX
 	    CALL OUT_PORTA
@@ -219,36 +247,41 @@ CODIGO SEGMENT PARA 'CODE'
 	    pop AX
 	    RET
    COMANDO_LCD ENDP
-
+;-----fim do ex4
+   
       ; #####################################################################
       ; procedimento que escreve um caracter no display LCD
       ; o caracter deve estar no registrador AH em código ASCII]
       
+ ;---ex5     
    ESCREVE_LCD PROC NEAR
 	    push AX
 	    push CX
-	    CALL OUT_PORTA
+	    CALL OUT_PORTA  ;a-carregar caracter no barramento de dados do display
 	    MOV AH, 05H
-	    CALL OUT_PORTB	 
-	    MOV CX, DELAY_500us
+	    CALL OUT_PORTB ;c- escreva o dado no PORTB	 
+	    MOV CX, DELAY_500us ;d-aguarda 500
 	    CALL DELAY
-	    MOV AH, 01H
-	    CALL OUT_PORTB
+	    MOV AH, 01H ;aqui so pode ser e- desabilitar o lcd do modo escrita
+	   ;ou seja enable = 0 .. 
+	   CALL OUT_PORTB ;f- escreve novo dado
 	    pop CX
 	    pop AX
 	    RET
    ESCREVE_LCD ENDP
+   ;------fim do ex5
    
       ; #####################################################################
       ; procedimento que escreve um conjunto de caracteres no display LCD
       ; o endereço de memória de início da string deve estar no registrador SI
       ; toda string deve conter o terminador '$'
       
+      ;---ex8
    TXT_LCD PROC NEAR         
 	 push AX
-	 CLD
-   M:    LODSB
-	 CMP AL, '$'
+	 CLD ;c- loop de impressao
+   M:    LODSB; - - loop de impressao
+	 CMP AL, '$' ; simbolo terminador da string
 	 JZ E_T
 	 MOV AH, AL      
 	 CALL ESCREVE_LCD      
@@ -256,13 +289,16 @@ CODIGO SEGMENT PARA 'CODE'
    E_T:  pop AX
 	 RET
    TXT_LCD ENDP
-      
-      ; #####################################################################
+      ;-------fim do ex8
+    
+    ; #####################################################################
       ; procedimento que limpa o display LCD
+   
+   ;--ex7
    CLEAR_LCD PROC NEAR
 	 push AX
 	 push CX
-	 MOV AH, 01H
+	 MOV AH, 01H ; o comando 01h limpa a tela
 	 CALL COMANDO_lCD
 	 MOV CX, DELAY_5ms
 	 CALL DELAY 
@@ -270,28 +306,33 @@ CODIGO SEGMENT PARA 'CODE'
 	 pop AX
 	 RET
    CLEAR_LCD ENDP
+;----fim do ex7
 
       ; #####################################################################
       ; procedimento que posiciona o cursor do display LCD
       ; o registrador BX armazena as coordenadas
       ; BH = linha  - 01 e 02
       ; BL = coluna - 01 a 16
-   CURSOR_POS_LCD PROC NEAR
+  
+;--ex9 
+ CURSOR_POS_LCD PROC NEAR
 	 push AX
-	 push BX
-	 CMP BH, 01H
+	 push BX ;bx é o operando de entrada aqui
+	 CMP BH, 01H ;bh linha
+	 ;-se bh=1 carregar ah com 80h
 	 JZ P_L
-	 MOV AH, 0C0H
+	 MOV AH, 0C0H ;;se bh=2 carrega com och
 	 JMP S
    P_L:	 MOV AH, 080H
-   S:	 DEC BL
+   S:	 DEC BL ;bl coluna 
 	 ADD AH, BL
-	 CALL COMANDO_LCD
+	 CALL COMANDO_LCD ;enviar pro display o valor final de AH
 	 pop BX
 	 pop AX
 	 RET	 
    CURSOR_POS_LCD ENDP
-
+;---------fim do ex9
+   
    ; #####################################################################
    ; procedimento que aciona o cursor do display LCD
    CURSOR_ON_LCD PROC NEAR
@@ -316,11 +357,226 @@ CODIGO SEGMENT PARA 'CODE'
       ; procedimento de análise de teclas
       ; o código de entrada do teclado estará disponível na posição de memória PORTC_VAL
       ; a tecla pressionada estará disponível na posição de memória TECLA
-      TECLADO PROC NEAR
+      CALCULO PROC NEAR
       
-	 ; * insira seu código aqui *
+	JMP OI
+OP_MUL: 
+	 push DX
+	 MOV DX,0H
+	 MOV AX, valor1
+	 MUL BX
+	 CMP DX,0D
+	 JZ OP_MUL2	;PULA SE A MULTIPLICAÇAO NAO ESTOURAR O AX
+	 CALL OVERFLOW
+OP_MUL2: MOV BX,AX
+	 POP DX
+	 JMP Endd
+OP_DIV: 
+	 push DX
+	 MOV DX,0H
+	 MOV AX, valor1
+	 CMP BX,0D
+	 JZ INVALIDO
+	 DIV BX
+	 MOV BX,AX
+	 JMP VALEU
+INVALIDO:MOV INVA,2D	 
+VALEU:	 POP DX 
+	 JMP Endd
+OP_SOMA: 
+	 MOV AX, valor1
+	 ADD BX,AX
+	 JNC OP_SOMA2
+	 CALL OVERFLOW
+OP_SOMA2:
+	 JMP Endd
+OP_SUB: 
+	 MOV AX,valor1
+	 push CX
+	 push DX
+	 MOV DX,0FFFFH
+	 MOV CX,0FFFFH
+	 MOV DL,AH
+	 MOV CL,BH
+	 CMP DX,CX
+	 JZ POSITIVO0
+	 JNL POSITIVO1
+	 MOV MENOR,1D
+	 JMP POSITIVO1
+POSITIVO0: CMP AL,BL
+	 JNL POSITIVO1
+	 MOV MENOR,1D
+POSITIVO1: SUB AX,BX
+	 MOV BX,AX
+	 POP DX
+	 POP CX
+	 JMP Endd
+
+OI:
+	       push AX
+	       CMP CONTA, 10D
+	       JZ OP_SUB
+	       CMP CONTA, 11D
+	       JZ OP_DIV
+	       CMP CONTA, 13D
+	       JZ OP_SOMA
+	       CMP CONTA, 14D
+	       JZ OP_MUL
+Endd:
+      POP AX
+      RET
 	 
-      TECLADO ENDP 
+      CALCULO ENDP
+     
+    
+    
+      ;----------------------------------------
+      OVERFLOW PROC NEAR 
+      MOV INVA,01D
+      RET
+      OVERFLOW ENDP
+   ;----------------------------------   
+      
+      
+	 ESCREVE_RESP PROC NEAR
+	    CLI
+	   push AX
+	   push DX
+	   push BX
+	   push BX
+	   MOV BX,020BH
+	   CALL CURSOR_POS_LCD
+	   POP BX
+	   CMP INVA,02H
+	   JNZ VAL0	;DIVISAO POR 0
+	   LEA SI,erro2
+	   CALL TXT_LCD
+	   JMP EEEND
+VAL0:	   CMP INVA,01H
+	   JNZ VAL1	;NUMERO GRANDE
+	   LEA SI,erro1
+	   CALL TXT_LCD
+	   JMP EEEND
+VAL1:	   CMP MENOR,1H		;NUMERO NEGATIVO
+	   JNZ VAL2
+	   MOV AH,45D
+	   CALL ESCREVE_LCD
+	   MOV AX,0FFFFH
+	   SUB AX,BX
+	   MOV BX,AX
+	   INC BX
+VAL2:	   MOV AX,BX
+	   MOV BX,10000D
+	   MOV DX,0D
+	   DIV BX
+	   MOV C1,AL
+	   MOV AX,DX
+	   MOV BX,1000D
+	   MOV DX,0D
+	   DIV BX
+	   MOV C2,AL
+	   MOV AX,DX
+	   MOV BX,100D
+	   MOV DX,0D
+	   DIV BX
+	   MOV C3,AL
+	   MOV AX,DX
+	   MOV BX,10D
+	   MOV DX,0D
+	   DIV BX
+	   MOV C4,AL
+	   MOV C5,DL
+	   MOV AL,C1
+	   CMP AL,0D
+	   JNZ DIG5	;5 DIGITOS
+	   MOV AL,C2	;FIZ 5 LUGARES DIFERENTES PARA DEIXAR O ESPAÇO EM BRANCO E DEIXAR OS NUMERO ENCOSTANDO NO FIM 
+	   CMP AL,0D
+	   JNZ DIG4
+	   MOV AL,C3
+	   CMP AL,0D
+	   JNZ DIG3
+	   MOV AL,C4
+	   CMP AL,0D
+	   JNZ DIG2
+	   JP  DIG1
+DIG5:	MOV AH,C1
+	ADD AH,48D
+        CALL ESCREVE_LCD
+	MOV AH,C2
+	ADD AH,48D
+        CALL ESCREVE_LCD
+	MOV AH,C3
+	ADD AH,48D
+        CALL ESCREVE_LCD
+	MOV AH,C4
+	ADD AH,48D
+        CALL ESCREVE_LCD
+	MOV AH,C5
+	ADD AH,48D
+        CALL ESCREVE_LCD
+	JMP EEEND
+DIG4:	MOV AH,C1
+        CALL ESCREVE_LCD
+	MOV AH,C2
+	ADD AH,48D
+        CALL ESCREVE_LCD
+	MOV AH,C3
+	ADD AH,48D
+        CALL ESCREVE_LCD
+	MOV AH,C4
+	ADD AH,48D
+        CALL ESCREVE_LCD
+	MOV AH,C5
+	ADD AH,48D
+        CALL ESCREVE_LCD
+	JMP EEEND
+DIG3:	MOV AH,C1
+        CALL ESCREVE_LCD
+	MOV AH,C2
+        CALL ESCREVE_LCD
+	MOV AH,C3
+	ADD AH,48D
+        CALL ESCREVE_LCD
+	MOV AH,C4
+	ADD AH,48D
+        CALL ESCREVE_LCD
+	MOV AH,C5
+	ADD AH,48D
+        CALL ESCREVE_LCD
+	JMP EEEND
+DIG2:	MOV AH,C1
+        CALL ESCREVE_LCD
+	MOV AH,C2
+        CALL ESCREVE_LCD
+	MOV AH,C3
+        CALL ESCREVE_LCD
+	MOV AH,C4
+	ADD AH,48D
+        CALL ESCREVE_LCD
+	MOV AH,C5
+	ADD AH,48D
+        CALL ESCREVE_LCD
+	JMP EEEND
+DIG1:	MOV AH,C1
+        CALL ESCREVE_LCD
+	MOV AH,C2
+        CALL ESCREVE_LCD
+	MOV AH,C3
+        CALL ESCREVE_LCD
+	MOV AH,C4
+        CALL ESCREVE_LCD
+	MOV AH,C5
+	ADD AH,48D
+        CALL ESCREVE_LCD
+	JMP EEEND
+	
+EEEND:
+	   POP BX
+	   POP DX
+	   POP AX
+	   RET
+ 
+	 ESCREVE_RESP ENDP
       
       ; #####################################################################
       ; trata a interrupção do teclado e armazena programa da calculadora
@@ -337,43 +593,71 @@ CODIGO SEGMENT PARA 'CODE'
 	 JNZ NAO14
 	 MOV DX,00001H
 	 MOV BX,00000H
-	 JMP ASD
-NAO14:	 CMP AL,07BH		;-
+	 MOV IGUAL,0D
+	 MOV MENOR,0H
+	 MOV INVA,0H
+	 MOV NUM,0H
+	 MOV CONTA,0D
+	 MOV valor1,0H
+	 CMP ligado,01D
+	 JNZ ZERA
+	    CALL CURSOR_OFF_LCD
+	    MOV ligado,0D
+	    JMP ON
+ZERA:	 CALL CURSOR_ON_LCD
+	 MOV ligado,1D
+	 JMP ON
+NAO14:	 CMP ligado,0D
+	 JZ SAI
+	 MOV ligado,02d		;MARCA QUE ALGO ESTA ESCRITO (SO CHEGA AQUI SE NA TIVER PRESSIOANDO O ON
+	 CMP AL,07BH		;-
 	 JNZ NAO10
-	 MOV DX,0010D
+	 MOV CONTA,10D
+	 INC NUM
+	 MOV DH,00D
 	 LEA SI, b10
-	 JMP ASD
+	 JMP OPE
 NAO10:	 CMP AL,07EH		;/
 	 JNZ NAO11
-	 MOV DX,0011D
+	 MOV CONTA,11D
+	 MOV DH,00D
+	 INC NUM
 	 LEA SI, b11
-	 JMP ASD
+	 JMP OPE
 NAO11:	 CMP AL,0B7H		;=
 	 JNZ NAO12
-	 MOV DX,0012D
+	 MOV IGUAL,12D
 	 LEA SI, b12
-	 JMP ASD
+	 JMP ASD3
 NAO12:	 CMP AL,077H		;+
 	 JNZ NAO13
-	 MOV DX,0013D
+	 MOV CONTA,13D
+	 INC NUM
+	 MOV DH,00D
 	 LEA SI, b13
-	 JMP ASD
+	 JMP OPE
 NAO13:	 CMP AL,07DH		;*
 	 JNZ NAO9
-	 MOV DX,14D
+	 MOV CONTA,14D
+	 INC NUM
+	 MOV DH,00D
 	 LEA SI, b14
-	 JMP ASD
-NAO9:	 CMP AL,0BEH
+	 JMP OPE
+NAO9:	 push DX		;DX É USADO NA MULTIPLICAÇAO, SERVE PARA O OVERFLOW 
+	 MOV DX,0D
+	 CMP AL,0BEH
 	 JNZ NAO8
 	 CMP BX,0D
 	 JZ SOMA9
 	 push AX
 	 MOV AX,10D
 	 MUL BX
-	 MOV BX,AX
+	 MOV BX,AX			;salva o valor em BX
 	 POP AX
 SOMA9:	 ADD BX,9H
-	 LEA SI,b9
+	 JNC CONT9
+	 CALL OVERFLOW
+CONT9:	 LEA SI,b9
 	 JMP ASD
 NAO8:	 CMP AL,0DEH
 	 JNZ NAO7
@@ -385,7 +669,9 @@ NAO8:	 CMP AL,0DEH
 	 MOV BX,AX
 	 POP AX
 SOMA8:	 ADD BX,8H
-	 LEA SI,b8
+	 JNC CONT8
+	 CALL OVERFLOW
+CONT8:	 LEA SI,b8
 	 JMP ASD
 NAO7:	 CMP AL,0EEH
 	 JNZ NAO6
@@ -397,7 +683,9 @@ NAO7:	 CMP AL,0EEH
 	 MOV BX,AX
 	 POP AX
 SOMA7:	 ADD BX,7H
-	 LEA SI,b7
+	 JNC CONT7
+	 CALL OVERFLOW
+CONT7:	 LEA SI,b7
 	 JMP ASD
 NAO6:	 CMP AL,0BDH
 	 JNZ NAO5	
@@ -409,7 +697,9 @@ NAO6:	 CMP AL,0BDH
 	 MOV BX,AX
 	 POP AX
 SOMA6:	 ADD BX,6H
-	 LEA SI,b6
+	 JNC CONT6
+	 CALL OVERFLOW
+CONT6:	 LEA SI,b6
 	 JMP ASD
 NAO5:	 CMP AL,0DDH
 	 JNZ NAO4
@@ -483,19 +773,37 @@ NAO0:	 CMP AL,0D7H
 SOMA0:	 ADD BX,0H
 	 LEA SI,b0
 	 JMP ASD
-ASD: 	 CALL TXT_LCD
+OPE:	 MOV valor1,BX		;PARA QUANDO PRESSIONA + - / OU *
+	 MOV BX,0D
+	 JMP ASD3
+ON:	 CALL CLEAR_LCD		;INICIA O LCD
+	 JMP ASD2
+ASD: 	 CMP DX,0D
+	 JZ NAO_OVER
+	 CALL OVERFLOW
+NAO_OVER: POP DX
+ASD3:	CALL TXT_LCD		;ESCREVE A TECLA PRESSIONADA
+ASD2:	 push DX
 	 MOV DX,AX
-FICA_AE: push DX
+FICA_AE: push DX		;LOOP PARA TRAVAR ATE SOLTAR A TECLA
 	 CALL IN_PORTC
 	 CMP DX,AX
 	 POP DX
 	 JZ FICA_AE
-	 CMP DX,13D
+	 POP DX
+	 CMP IGUAL,12D
 	 JNZ SAI
-	 MOV DL,RESP
-	 ADD resp,48D
-	 LEA SI,resp
-	 CALL TXT_LCD
+	 push AX
+	 MOV AL,01D
+	 CMP AL,NUM
+	 JNC AQUI		;COMPARA SE TEM MAIS DE 2 TERMOS
+	 CALL OVERFLOW
+AQUI:	 POP AX
+	 CALL CALCULO
+	 MOV ligado,0d
+	 CALL ESCREVE_RESP
+	
+	
 SAI:
 	 ; * insira seu código aqui *
 	    
